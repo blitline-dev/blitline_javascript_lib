@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+   "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<meta http-equiv="Content-Script-Type" content="text/javascript">
+<title></title>
+<script src='https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'></script>
+<script src='https://s3.amazonaws.com/web.blitline/underscore-min.js'></script>
+<script src='blitline_cors.js'></script>
+
+<script type="text/javascript">
+	$(document).ready(function() {
+
+		var blitline = new Blitline();
+		var events = {
+			completed : function(images, error) {
+				// This event tells you that Blitline.com has completed processing the images. There is an error string that is
+				// returned which may tell you specifically what the problem is, OR if there was a server side error. It will
+				// not always tell you what the server side error is.
+				// If successfull, it will return the same images as the submitted event did.
+				if (!error) {
+					alert("Job completed successfully");
+					_.each(images, function(image) {
+						$("#output").append("<div>"+image.s3_url+"</div><div><img src='" + image.s3_url+"' /></div>");
+
+					});
+
+				}else {
+					alert("There was an error processing the images. Please see following error:\r\n\r\n" + error + "\r\n\r\nIf you are unable to resolve the issue, please check your Dashboard at Blitline.com");
+				}
+			},
+			submitted : function(jobIds, images) {
+				// This event just tells you that your json has been successfulling submitted to Blitline.com,
+				// it does not imply that the processing has completed, or that is was successfull. This would be
+				// a good event to give some feedback UI.
+				alert("Job has been succesfully submitted to blitline for processing\r\n\r\nPlease wait a few moments for them to complete.");
+			}
+		}
+
+
+
+		$("#goButton").click(function() {
+			$("#output").empty();
+			var jobs;
+
+			// Simplest way, raw string
+			jobs = $("#json").val();
+
+			/****************************************************************************************
+			 *
+			 * Alernative jobs definition #1 (Defining the json programmatically, this will work too)
+			 *
+			 **************************************************************************************** /
+			jobs = [{
+				  "application_id": "YOUR_APP_ID",
+				  "src" : "http://www.google.com/intl/en_com/images/srpr/logo3w.png",
+				  "functions" :
+				  [{
+					"name": "rotate",
+					"params" : { "amount" : -90 },
+					"save" : { "image_identifier" : "external_sample_1" }
+				  }]
+				},
+				{
+				  "application_id": "YOUR_APP_ID",
+				  "src" : "http://www.google.com/intl/en_com/images/srpr/logo3w.png",
+				  "functions" :
+				  [{
+					"name": "rotate",
+					"params" : { "amount" : -90 },
+					"save" : { "image_identifier" : "external_sample_2" }
+				  }]
+				}
+				]
+
+			*/
+
+			/****************************************************************************************
+			 *
+			 * Alernative jobs definition #2 (Defining the json via Blitline objects, this will work too)
+			 *
+			 **************************************************************************************** /
+
+			var first_job = new BlitlineJob("LSCQfBEu_6dQwi9vgOoBAA", "http://www.google.com/intl/en_com/images/srpr/logo3w.png");
+			first_job.functions.push(new BlitlineFunction("rotate", { "amount" : -90}, new BlitlineSaveObject("external_sample_1")));
+
+			var second_job = new BlitlineJob("LSCQfBEu_6dQwi9vgOoBAA", "http://www.google.com/intl/en_com/images/srpr/logo3w.png");
+			second_job.functions.push(new BlitlineFunction("rotate", { "amount" : -90}, new BlitlineSaveObject("external_sample_2")));
+
+			jobs = [ first_job, second_job];
+
+			*/
+			blitline.submit(jobs, events)
+		})
+	});
+
+
+</script>
+</head>
+<body>
+	<h1 style="text-align:center;">Javascript post to Blitline: Demo </h1>
+	<h3>JSON to submit</h3>
+	<textarea style="width: 500px; height: 300px;" id="json">
+[
+{
+  "application_id": "LSCQfBEu_6dQwi9vgOoBAA",
+  "src" : "http://www.google.com/logos/2012/childrensday-2012-hp.jpg",
+  "functions" :
+  [{
+	"name": "blur",
+	"params" : { "radius" : 1 },
+	"save" : { "image_identifier" : "external_sample_1" }
+  }]
+},
+{
+  "application_id": "LSCQfBEu_6dQwi9vgOoBAA",
+  "src" : "http://www.google.com/logos/2012/iguacu12-hp.jpg",
+  "functions" :
+  [{
+	"name": "sepia_tone",
+	"params" : {},
+	"save" : { "image_identifier" : "external_sample_2" }
+  }]
+}
+]
+
+	</textarea>
+	<br/>
+	<input id="goButton" type="button" value="Go!" />
+	<br/>
+	<i style="font-size:10px">You will need to replace YOUR_APP_ID above with your actual Blitline ID. It is probably best to go ahead and change this html page to have it by default</i>
+	<div id="output"></div>
+</body>
+</html>

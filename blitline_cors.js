@@ -1,0 +1,252 @@
+Blitline = function() {
+	var submittedCallback,
+		completedCallback,
+		inProgress = false,
+		images = [],
+		serverUrl = "http://api.blitline.com";
+
+	this.submit = function(jobs, callbacks) {
+		var validationErrors = [],
+			normalizedJobs;
+
+		if (!jobs) { validationErrors.push("No haz jobs...");}
+		if (inProgress) { validationErrors.push("You cannot resubmit a job when one is already in progress, make a seperate Blitline object if you want to do multiple calls.");}
+
+		try {
+			normalizedJobs = normalizeJobsIntoArray(jobs);
+		}catch(ex) {
+			validationErrors.push("Failed to parse jobs data: " + ex.message);
+		}
+
+		if (validationErrors.length > 0) {
+			var returnableErrors = validationErrors.join(", ");
+			if(completedCallback) {
+				completedCallback(images, returnableErrors);
+			}
+			return returnableErrors;
+		}
+
+		if (callbacks) {
+			submittedCallback = callbacks.submitted;
+			completedCallback = callbacks.completed;
+		}
+		images = [];
+		var errors = validateJobs(normalizedJobs);
+
+		if (!errors) {
+			inProgress = true;
+			postCORS(serverUrl + "/job", { json : JSON.stringify(normalizedJobs) }, function(response) {
+				try {
+					var results = response.results,
+						returnedErrors = [];
+
+					// Result returned, look for errors
+					_.each(results, function(result) {
+						if (result.error) {
+							returnedErrors.push(result.error);
+						}
+					});
+
+					if (returnedErrors.length > 0) {
+						handleCompletedCallback(null, returnedErrors.join(", "));
+					}else {
+						handleSubmittedCallback(results);
+					}
+				}catch(ex) {
+					inProgress = false;
+					errors = "Unable to submit to Blitline:" + ex.message;
+				}
+			});
+		}else {
+			handleCompletedCallback(null, errors);
+		}
+		return errors;
+	};
+
+	function normalizeJobsIntoArray(jobs) {
+		// Force jobs into array if it's passed as a string
+		if (_.isArray(jobs)) {
+			return jobs;
+		}
+		if (JSON) {
+			var json = JSON.parse(jobs);
+			if (_.isArray(json)) {
+				return json;
+			}
+			return [json];
+		}else {
+			throw "jobs must be passed as an array on browsers that don't support JSON.parse, like YOU ie<8";
+		}
+	}
+
+	function handleCompletedCallback(images, error) {
+		inProgress = false;
+		if(completedCallback) {
+			completedCallback(images, error);
+		}
+	}
+
+	function handleSubmittedCallback(results) {
+		var jobIds = [],
+			image_results = results;
+		_.each(image_results, function(image_sets) {
+			jobIds.push(image_sets.job_id);
+			_.each(image_sets.images, function(image) {
+				images.push(image);
+			});
+		});
+		if (submittedCallback) {
+			submittedCallback(jobIds, images);
+		}
+		pollForCompletion(jobIds);
+	}
+
+	function pollForCompletion(jobIds) {
+		// Polling sucks. Ideally, in production, you would have a postback defined in your json (for the Blitline job) which would
+		// notify YOUR server when the job has completed, then you can poll your own server for completion. Without that, you are
+		// stuck polling Blitline servers, which you should treat as if you are going to have to pay for, because sometime in the
+		// future you might have to pay for polling Blitline.
+		setTimeout(pollBlitline, 5000);
+
+		function pollBlitline() {
+			$.getJSON(serverUrl + "/poll_for_completed?job_ids=" + jobIds.join(",") + "&callback=?", function(data) {
+					if (data.error) {
+						handleCompletedCallback(images, data.error); // Polling failed
+					}else if (data.result.is_complete) {
+						handleCompletedCallback(images, data.result.has_errors ? "Server side error. Check dasboard." : null);
+					}else {
+						setTimeout(pollBlitline, 5000);
+					}
+				});
+		}
+	}
+
+	function validateJobs(jobs) {
+		var errors = [];
+		_.each(jobs , function(job) {
+			if (!job.application_id || !job.src) { errors.push("You must have both an application_id and source_url for each job.");}
+			if (!job.functions || job.functions.length === 0) { errors.push("You dont have any functions defined for this job."); }
+			_.each(job.functions , function(blitlineFunction) {
+				if (!blitlineFunction.name) { errors.push("You are missing a function name"); }
+				if (blitlineFunction.save) {
+					if (!blitlineFunction.save.image_identifier) { errors.push("You must have an image_identifier for every save function");}
+					var s3_destination = blitlineFunction.save.s3_destination;
+					if (s3_destination) {
+						if (!s3_destination.bucket || !s3_destination.key) { errors.push("You must have a bucket and key for every s3_destination");}
+					}
+				}
+			});
+		});
+		return errors.length > 0 ? errors.join(", ") : null;
+	}
+
+	/**
+	* This method is for Cross-site Origin Resource Sharing (CORS) POSTs
+	*
+	* @param string   url      the url to post to
+	* @param mixed    data     additional data to send [optional]
+	* @param function callback a function to call on success [optional]
+	* @param string   type     the type of data to be returned [optional]
+	*/
+	function postCORS(url, data, callback, type)
+	{
+		try {
+			// Try using jQuery to POST
+			jQuery.post(url, data, callback, type);
+		} catch(e) {
+			// jQuery POST failed
+			var params = '';
+			var key;
+			for (key in data) {
+				params = params+'&'+key+'='+data[key];
+			}
+			// Try XDR, or use the proxy
+			if (jQuery.browser.msie && window.XDomainRequest) {
+				// Use XDR
+				var xdr = new XDomainRequest();
+				xdr.open("post", url);
+				xdr.send(params);
+				xdr.onload = function() {
+					callback(handleXDROnload(this, type), 'success', this);
+				};
+			} else {
+				try {
+					// Use the proxy to post the data.
+					request = new proxy_xmlhttp();
+					request.open('POST', url, true);
+					request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+					request.send(params);
+				} catch(e) {
+					// could not post using the proxy
+				}
+			}
+		}
+	}
+
+	/**
+	* Because the XDomainRequest object in IE does not handle response XML,
+	* this function acts as an intermediary and will attempt to parse the XML and
+	* return a DOM document.
+	*
+	* @param XDomainRequest xdr  The XDomainRequest object
+	* @param string         type The type of data to return
+	*
+	* @return mixed
+	*/
+	function handleXDROnload(xdr, type)
+	{
+		var responseText = xdr.responseText, dataType = type || "";
+		if (dataType.toLowerCase() == "xml" && typeof responseText == "string") {
+			// If expected data type is xml, we need to convert it from a
+			// string to an XML DOM object
+			var doc;
+			try {
+				if (window.ActiveXObject) {
+					doc = new ActiveXObject('Microsoft.XMLDOM');
+					doc.async = 'false';
+					doc.loadXML(responseText);
+				} else {
+					var parser = new DOMParser();
+					doc = parser.parseFromString(responseText, 'text/xml');
+				}
+				return doc;
+			} catch(e) {
+				// ERROR parsing XML for conversion, just return the responseText
+			}
+		}
+		return responseText;
+	}
+};
+
+BlitlineJob = function(applicationId, sourceUrl, functions) {
+	return {
+		application_id : applicationId,
+		src : sourceUrl,
+		functions : functions || []
+	};
+};
+
+BlitlineFunction = function(name, params, save, functions) {
+	return {
+		name : name,
+		params: params || {},
+		functions : functions || [],
+		save: save
+	};
+};
+
+BlitlineSaveObject = function(imageIdentifier) {
+	return {
+		image_identifier : imageIdentifier || new Date().toString()
+	};
+};
+
+BlitlineS3Destination = function(bucket, key) {
+	return {
+		bucket : bucket,
+		key : key
+	};
+};
+
+
+
