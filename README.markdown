@@ -45,7 +45,9 @@ events and the blitline_cors.js library will take care of everything else for yo
 #### What are the requirements?
 The blitline_cors.js javascript library relies on *JQuery*, and *Underscore.js*. You must have both of these on your page for the blitline javascript library to work.
 
+#### Licensing?
 
+The project is licensed under the http://en.wikipedia.org/wiki/WTFPL license.
 
 
 
