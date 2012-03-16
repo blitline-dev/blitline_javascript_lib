@@ -1,4 +1,4 @@
-##### Using Blitline Javascript
+#### Using Blitline Javascript
 
 The blitline_cors.js file allows a simpler way to commit jobs to Blitline via javascript. Although Blitline was designed to be used by backends
 to handle image processing, many people have been expressed interest in scripting blitline jobs via javascript.
