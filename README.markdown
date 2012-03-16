@@ -16,6 +16,11 @@ better off using Blitline on the server. The javascript uses polling, which suck
 minimized. Also, the blitline_cor.js doesn't provide very robust error handling or meta-information, and you dont get back all the information you may want,
 that you would get via the standard Blitline postback.
 
+<b> Warning/Reminder! </b>Obviously too, you don't want to give clients your Blitline Application ID, because thats YOUR secret. If you give it to clients
+they could process stuff under your account. Blitline supports signed expiring tokens so you can give the clients tokens which
+expire which allows them to process an item under your App ID, without giving them your App ID (see http://blog.blitline.com/day/2011/12/27 for
+more details).
+
 #### Why is stuff called CORS?
 
 Behind the scenes, the cross domain posting happens via CORS
