@@ -37,6 +37,10 @@ Blitline = function() {
 			inProgress = true;
 			postCORS(serverUrl + "/job", { json : JSON.stringify(normalizedJobs) }, function(response) {
 				try {
+					if (typeof response === "string") {
+						response = JSON.parse(response);
+					}
+
 					var results = response.results,
 						returnedErrors = [];
 
