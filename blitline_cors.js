@@ -128,7 +128,7 @@ Blitline = function() {
 	function validateJobs(jobs) {
 		var errors = [];
 		_.each(jobs , function(job) {
-			if (!job.application_id || !job.src) { errors.push("You must have both an application_id and source_url for each job.");}
+			if (!job.application_id || !job.src) { errors.push("You must have both an application_id and src for each job.");}
 			if (!job.functions || job.functions.length === 0) { errors.push("You dont have any functions defined for this job."); }
 			_.each(job.functions , function(blitlineFunction) {
 				if (!blitlineFunction.name) { errors.push("You are missing a function name"); }
