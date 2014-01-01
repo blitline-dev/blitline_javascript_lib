@@ -1,0 +1,32 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"
+   "http://www.w3.org/TR/html4/strict.dtd">
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Content-Style-Type" content="text/css">
+<meta http-equiv="Content-Script-Type" content="text/javascript">
+<title></title>
+<script src='https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js'></script>
+<script src='https://s3.amazonaws.com/web.blitline/underscore-min.js'></script>
+<script src='blitline_cors.js'></script>
+<script type="text/javascript">
+	$(document).ready(function() {
+		var myAppId = "YOUR_APP_ID"
+		if (myAppId == "YOUR_APP_ID") {
+			alert("You must change YOUR_APP_ID to your Blitline Application ID");
+			return;
+		}
+		var blitline = new Blitline();
+		var events = {
+			completed : function(results, error) {
+				alert("Job completed:" + JSON.stringify(results));
+			}
+		}
+		var json = { "application_id": myAppId, "src" : "http://www.google.com/logos/2011/yokoyama11-hp.jpg", "functions" : [ {"name": "blur", "params" : {"radius" : 0.0,  "sigma" : 2.0}, "save" : { "image_identifier" : "MY_CLIENT_ID" }} ]};
+
+		json = JSON.stringify(json);
+		blitline.submit(json, events);
+	});
+</script>
+</head>
+<body>
+</body>

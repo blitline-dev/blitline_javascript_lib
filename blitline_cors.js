@@ -1,9 +1,12 @@
+// Version 1.11, Blitline LLC, License WTFPL, http://en.wikipedia.org/wiki/WTFPL
+
 Blitline = function() {
 	var submittedCallback,
 		completedCallback,
 		inProgress = false,
 		images = [],
-		serverUrl = "http://api.blitline.com";
+		serverUrl = "http://api.blitline.com",
+		cacheUrl = "http://cache.blitline.com/listen/";
 
 	this.submit = function(jobs, callbacks) {
 		var validationErrors = [],
@@ -50,7 +53,6 @@ Blitline = function() {
 							returnedErrors.push(result.error);
 						}
 					});
-
 					if (returnedErrors.length > 0) {
 						handleCompletedCallback(null, returnedErrors.join(", "));
 					}else {
@@ -79,7 +81,7 @@ Blitline = function() {
 			}
 			return [json];
 		}else {
-			throw "jobs must be passed as an array on browsers that don't support JSON.parse, like YOU ie<8";
+			throw "jobs must be passed as an array on browsers that don't support JSON.parse...I'm talking to YOU ie<8";
 		}
 	}
 
@@ -100,29 +102,36 @@ Blitline = function() {
 			});
 		});
 		if (submittedCallback) {
-			submittedCallback(jobIds, images);
+			try {
+				submittedCallback(jobIds, images);
+			}catch(ex) {
+			}
 		}
 		pollForCompletion(jobIds);
 	}
 
 	function pollForCompletion(jobIds) {
-		// Polling sucks. Ideally, in production, you would have a postback defined in your json (for the Blitline job) which would
-		// notify YOUR server when the job has completed, then you can poll your own server for completion. Without that, you are
-		// stuck polling Blitline servers, which you should treat as if you are going to have to pay for, because sometime in the
-		// future you might have to pay for polling Blitline.
-		setTimeout(pollBlitline, 5000);
+		// Switched to using Blitline long polling
+		var images = [];
+		_.each(jobIds, function(job_id) {
+			var destUrl = cacheUrl + job_id.toString();
 
-		function pollBlitline() {
-			$.getJSON(serverUrl + "/poll_for_completed?job_ids=" + jobIds.join(",") + "&callback=?", function(data) {
-					if (data.error) {
-						handleCompletedCallback(images, data.error); // Polling failed
-					}else if (data.result.is_complete) {
-						handleCompletedCallback(images, data.result.has_errors ? "Server side error. Check dasboard." : null);
-					}else {
-						setTimeout(pollBlitline, 5000);
+			$.ajax({
+				url: destUrl,
+				dataType: "jsonp",
+				success: function(data) {
+					if (data && data[0].results) {
+						if (data[0].results) {
+							var jsonResult = JSON.parse(data[0].results);
+							images.push(jsonResult);
+						}
+						if (images.length == jobIds.length) {
+							handleCompletedCallback(images, data[0].results.has_errors ? "Server side error. Check dasboard." : null);
+						}
 					}
-				});
-		}
+				}
+			});
+		});
 	}
 
 	function validateJobs(jobs) {
@@ -220,36 +229,6 @@ Blitline = function() {
 		}
 		return responseText;
 	}
-};
-
-BlitlineJob = function(applicationId, sourceUrl, functions) {
-	return {
-		application_id : applicationId,
-		src : sourceUrl,
-		functions : functions || []
-	};
-};
-
-BlitlineFunction = function(name, params, save, functions) {
-	return {
-		name : name,
-		params: params || {},
-		functions : functions || [],
-		save: save
-	};
-};
-
-BlitlineSaveObject = function(imageIdentifier) {
-	return {
-		image_identifier : imageIdentifier || new Date().toString()
-	};
-};
-
-BlitlineS3Destination = function(bucket, key) {
-	return {
-		bucket : bucket,
-		key : key
-	};
 };
 
 
