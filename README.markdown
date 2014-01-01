@@ -7,6 +7,7 @@ Specifically:
 - Long polling is used now for better performance
 - Simpler example and better handling of images
 - Added WTFPL (http://en.wikipedia.org/wiki/WTFPL) license to blitline_cors.js
+
 ---
 #### Using Blitline Javascript
 
