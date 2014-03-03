@@ -38,7 +38,6 @@ Blitline = function() {
 
 		if (!errors) {
 			inProgress = true;
-			console.dir(JSON.stringify(normalizedJobs));
 			postCORS(serverUrl + "/job", { json : JSON.stringify(normalizedJobs) }, function(response) {
 				try {
 					if (typeof response === "string") {
@@ -151,7 +150,6 @@ Blitline = function() {
 				}
 			});
 		});
-		console.log("passed validation");
 		return errors.length > 0 ? errors.join(", ") : null;
 	}
 
@@ -167,10 +165,8 @@ Blitline = function() {
 	{
 		try {
 			// Try using jQuery to POST
-			console.log("trying jquery", data);
 			jQuery.post(url, data, callback, type);
 		} catch(e) {
-			console.log("Failed jquery");
 			// jQuery POST failed
 			var params = '';
 			var key;
