@@ -38,6 +38,7 @@ Blitline = function() {
 
 		if (!errors) {
 			inProgress = true;
+			console.dir(JSON.stringify(normalizedJobs));
 			postCORS(serverUrl + "/job", { json : JSON.stringify(normalizedJobs) }, function(response) {
 				try {
 					if (typeof response === "string") {
@@ -137,7 +138,7 @@ Blitline = function() {
 	function validateJobs(jobs) {
 		var errors = [];
 		_.each(jobs , function(job) {
-			if (!job.application_id || !job.src) { errors.push("You must have both an application_id and src for each job.");}
+			if ((!job.application_id && !job.signature) || !job.src) { errors.push("You must have both an application_id and src for each job.");}
 			if (!job.functions || job.functions.length === 0) { errors.push("You dont have any functions defined for this job."); }
 			_.each(job.functions , function(blitlineFunction) {
 				if (!blitlineFunction.name) { errors.push("You are missing a function name"); }
@@ -150,6 +151,7 @@ Blitline = function() {
 				}
 			});
 		});
+		console.log("passed validation");
 		return errors.length > 0 ? errors.join(", ") : null;
 	}
 
@@ -165,8 +167,10 @@ Blitline = function() {
 	{
 		try {
 			// Try using jQuery to POST
+			console.log("trying jquery", data);
 			jQuery.post(url, data, callback, type);
 		} catch(e) {
+			console.log("Failed jquery");
 			// jQuery POST failed
 			var params = '';
 			var key;
