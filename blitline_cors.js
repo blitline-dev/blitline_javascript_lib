@@ -5,8 +5,8 @@ Blitline = function() {
 		completedCallback,
 		inProgress = false,
 		images = [],
-		serverUrl = "http://api.blitline.com",
-		cacheUrl = "http://cache.blitline.com/listen/";
+		serverUrl = (window.location.protocol + "//api.blitline.com"),
+		cacheUrl = (window.location.protocol + "//cache.blitline.com/listen/");
 
 	this.submit = function(jobs, callbacks) {
 		var validationErrors = [],
@@ -165,23 +165,24 @@ Blitline = function() {
 	{
 		try {
 			// Try using jQuery to POST
-			jQuery.post(url, data, callback, type);
+			jQuery.post(url, data, callback, type).fail(function(){ throw "jQuery.post() failed"; });
 		} catch(e) {
 			// jQuery POST failed
 			var params = '';
 			var key;
 			for (key in data) {
-				params = params+'&'+key+'='+data[key];
+				params = params+'&'+key+'='+encodeURIComponent(data[key]);
 			}
 			// Try XDR, or use the proxy
 			if (jQuery.browser.msie && window.XDomainRequest) {
 				// Use XDR
 				var xdr = new XDomainRequest();
 				xdr.open("post", url);
-				xdr.send(params);
+				xdr.onprogress = function() {};
 				xdr.onload = function() {
 					callback(handleXDROnload(this, type), 'success', this);
 				};
+				xdr.send(params);
 			} else {
 				try {
 					// Use the proxy to post the data.
