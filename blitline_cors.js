@@ -163,10 +163,7 @@ Blitline = function() {
 	*/
 	function postCORS(url, data, callback, type)
 	{
-		try {
-			// Try using jQuery to POST
-			jQuery.post(url, data, callback, type).fail(function(){ throw "jQuery.post() failed"; });
-		} catch(e) {
+		var fallback = function(){
 			// jQuery POST failed
 			var params = '';
 			var key;
@@ -194,6 +191,12 @@ Blitline = function() {
 					// could not post using the proxy
 				}
 			}
+		}
+		try {
+			// Try using jQuery to POST
+			jQuery.post(url, data, callback, type).fail(fallback);
+		} catch(e) {
+			fallback();
 		}
 	}
 
