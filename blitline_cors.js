@@ -1,4 +1,4 @@
-// Version 1.11, Blitline LLC, License WTFPL, http://en.wikipedia.org/wiki/WTFPL
+// Version 1.20, Blitline LLC, License WTFPL, http://en.wikipedia.org/wiki/WTFPL
 
 Blitline = function() {
 	var submittedCallback,
@@ -122,7 +122,12 @@ Blitline = function() {
 				success: function(data) {
 					if (data && data[0].results) {
 						if (data[0].results) {
-							var jsonResult = JSON.parse(data[0].results);
+							var jsonResult;
+							if ((typeof data[0].results)=="string") {
+								jsonResult = JSON.parse(data[0].results);					
+							}else {
+								jsonResult = data[0].results;
+							}
 							images.push(jsonResult);
 						}
 						if (images.length == jobIds.length) {
