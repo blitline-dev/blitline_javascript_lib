@@ -1,6 +1,6 @@
 // Version 1.20, Blitline LLC, License WTFPL, http://en.wikipedia.org/wiki/WTFPL
 
-Blitline = function() {
+Blitline = function(debug) {
 	var submittedCallback,
 		completedCallback,
 		inProgress = false,
@@ -22,6 +22,10 @@ Blitline = function() {
 		}
 
 		if (validationErrors.length > 0) {
+			if (debug) {
+				alert(validationErrors.toString());
+			}
+
 			var returnableErrors = validationErrors.join(", ");
 			if(completedCallback) {
 				completedCallback(images, returnableErrors);
@@ -64,6 +68,9 @@ Blitline = function() {
 				}
 			});
 		}else {
+			if (debug) {
+				alert(errors.toString());
+			}
 			handleCompletedCallback(null, errors);
 		}
 		return errors;
@@ -74,12 +81,17 @@ Blitline = function() {
 		if (_.isArray(jobs)) {
 			return jobs;
 		}
+
 		if (JSON) {
-			var json = JSON.parse(jobs);
-			if (_.isArray(json)) {
-				return json;
+			if (jobs && _.isString(jobs)) {
+				var json = JSON.parse(jobs);
+				if (_.isArray(json)) {
+					return json;
+				}
+				return [json];
+			}else {
+				return [jobs];
 			}
-			return [json];
 		}else {
 			throw "jobs must be passed as an array on browsers that don't support JSON.parse...I'm talking to YOU ie<8";
 		}
@@ -124,7 +136,7 @@ Blitline = function() {
 						if (data[0].results) {
 							var jsonResult;
 							if ((typeof data[0].results)=="string") {
-								jsonResult = JSON.parse(data[0].results);					
+								jsonResult = JSON.parse(data[0].results);
 							}else {
 								jsonResult = data[0].results;
 							}
@@ -239,6 +251,3 @@ Blitline = function() {
 		return responseText;
 	}
 };
-
-
-
