@@ -1,12 +1,13 @@
-// Version 1.20, Blitline LLC, License WTFPL, http://en.wikipedia.org/wiki/WTFPL
+// Version 1.21, Blitline LLC, License WTFPL, http://en.wikipedia.org/wiki/WTFPL
 
 Blitline = function(debug) {
 	var submittedCallback,
+		failedSubmissionCallback,
 		completedCallback,
 		inProgress = false,
 		images = [],
 		serverUrl = (window.location.protocol + "//api.blitline.com"),
-		cacheUrl = (window.location.protocol + "//cache.blitline.com/listen/");
+		cacheUrl = (window.location.protocol + "//cache.blitline.com/listen/")
 
 	this.submit = function(jobs, callbacks) {
 		var validationErrors = [],
@@ -36,13 +37,14 @@ Blitline = function(debug) {
 		if (callbacks) {
 			submittedCallback = callbacks.submitted;
 			completedCallback = callbacks.completed;
+			failedSubmissionCallback = callbacks.failedSubmission;
 		}
 		images = [];
 		var errors = validateJobs(normalizedJobs);
 
 		if (!errors) {
 			inProgress = true;
-			postCORS(serverUrl + "/job", { json : JSON.stringify(normalizedJobs) }, function(response) {
+			postCORS(serverUrl + "/job", { json : JSON.stringify(normalizedJobs) }, failedSubmissionCallback, function(response) {
 				try {
 					if (typeof response === "string") {
 						response = JSON.parse(response);
@@ -173,14 +175,14 @@ Blitline = function(debug) {
 	/**
 	* This method is for Cross-site Origin Resource Sharing (CORS) POSTs
 	*
-	* @param string   url      the url to post to
-	* @param mixed    data     additional data to send [optional]
+	* @param string	 url			the url to post to
+	* @param mixed		data		 additional data to send [optional]
 	* @param function callback a function to call on success [optional]
-	* @param string   type     the type of data to be returned [optional]
+	* @param string	 type		 the type of data to be returned [optional]
 	*/
-	function postCORS(url, data, callback, type)
+	function postCORS(url, data, failedSubmissionCallback, callback, type)
 	{
-		var fallback = function(){
+		var fallback = function(xhr, textStatus, errorThrown){
 			// jQuery POST failed
 			var params = '';
 			var key;
@@ -198,22 +200,30 @@ Blitline = function(debug) {
 				};
 				xdr.send(params);
 			} else {
-				try {
-					// Use the proxy to post the data.
-					request = new proxy_xmlhttp();
-					request.open('POST', url, true);
-					request.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-					request.send(params);
-				} catch(e) {
-					// could not post using the proxy
+				// Use the proxy to post the data.
+				if (failedSubmissionCallback) {
+					console.dir([xhr, textStatus, errorThrown]);
+					var errorText = xhr.responseText;
+
+					if (errorText.toString().length == 0) {
+						errorText = "No error description. This is probably a CORS error that you can debug in your browser console"
+					}
+					failedSubmissionCallback(errorText);
 				}
 			}
 		}
+
 		try {
 			// Try using jQuery to POST
 			jQuery.post(url, data, callback, type).fail(fallback);
 		} catch(e) {
-			fallback();
+			try {
+				fallback(e);
+			}catch(fe) {
+				if (failedSubmissionCallback) {
+					failedSubmissionCallback(fe.message);
+				}
+			}
 		}
 	}
 
@@ -222,8 +232,8 @@ Blitline = function(debug) {
 	* this function acts as an intermediary and will attempt to parse the XML and
 	* return a DOM document.
 	*
-	* @param XDomainRequest xdr  The XDomainRequest object
-	* @param string         type The type of data to return
+	* @param XDomainRequest xdr	The XDomainRequest object
+	* @param string				 type The type of data to return
 	*
 	* @return mixed
 	*/

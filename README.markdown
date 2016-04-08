@@ -3,7 +3,7 @@
 
 Specifically:
 
-- If you are using an older version, the completed callback returns results, not an array of images. The results corresponds to exactly what would be returned by long polling or the Blitline postback. 
+- If you are using an older version, the completed callback returns results, not an array of images. The results corresponds to exactly what would be returned by long polling or the Blitline postback.
 - Long polling is used now for better performance
 - Simpler example and better handling of images
 - Added WTFPL (http://en.wikipedia.org/wiki/WTFPL) license to blitline_cors.js
@@ -43,8 +43,8 @@ Blitline supports CORS headers for cross domain ajax/posts and ajax/gets, which 
 * Safari : YES
 * Chrome : YES
 * Firefox: YES
-* IE8+   : YES
-* IE7-   : NO (Sorry IE7ers and below, you are on your own)
+* IE8+	 : YES
+* IE7-	 : NO (Sorry IE7ers and below, you are on your own)
 
 #### Is there any way other than CORS?
 Yes. If you want to use something that uses IFRAME messaging, like http://benalman.com/code/projects/jquery-postmessage/docs/files/jquery-ba-postmessage-js.html,
@@ -55,23 +55,27 @@ There is only two files, just download them and look at them. I think it's prett
 events and the blitline_cors.js library will take care of everything else for you.
 
 ##Simple Example:
-    // Set your own App ID;
+		// Set your own App ID;
 	var myAppId = "YOUR_APP_ID"
-	
-    // Create Blitline Object
+
+		// Create Blitline Object
 	var blitline = new Blitline();
-    
+
 	// Add events for handling submitted and completed
 	var events = {
 		completed : function(results, error) {
 			alert("Job completed:" + JSON.stringify(results));
+		},
+		failedSubmission: function(error) {
+			alert("Error: " + error);
 		}
+
 	}
-    
+
 	// Build your JSON
-	var json = { "application_id": myAppId, "src" : "http://www.google.com/logos/2011/yokoyama11-hp.jpg", "functions" : [ {"name": "blur", "params" : {"radius" : 0.0,  "sigma" : 2.0}, "save" : { "image_identifier" : "MY_CLIENT_ID" }} ]};
-	
-    // Submit it
+	var json = { "application_id": myAppId, "src" : "http://www.google.com/logos/2011/yokoyama11-hp.jpg", "functions" : [ {"name": "blur", "params" : {"radius" : 0.0,	"sigma" : 2.0}, "save" : { "image_identifier" : "MY_CLIENT_ID" }} ]};
+
+		// Submit it
 	blitline.submit(JSON.stringify(json), events);
 
 Otherwise, check out cors.html for a more complete example.
@@ -82,6 +86,3 @@ The blitline_cors.js javascript library relies on *JQuery*, and *Underscore.js*.
 #### Licensing?
 
 The project is licensed under the http://en.wikipedia.org/wiki/WTFPL license.
-
-
-
