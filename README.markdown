@@ -44,11 +44,6 @@ Blitline supports CORS headers for cross domain ajax/posts and ajax/gets, which 
 * Chrome : YES
 * Firefox: YES
 * IE8+	 : YES
-* IE7-	 : NO (Sorry IE7ers and below, you are on your own)
-
-#### Is there any way other than CORS?
-Yes. If you want to use something that uses IFRAME messaging, like http://benalman.com/code/projects/jquery-postmessage/docs/files/jquery-ba-postmessage-js.html,
-we have some support for this too. Write us at support@blitline.om and we can give you some help guidance.
 
 #### How do I use it?
 There is only two files, just download them and look at them. I think it's pretty self explanatory. You create a Blitline object, then submit jobs with some callback
